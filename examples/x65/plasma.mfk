@@ -8,13 +8,13 @@ pointer p   @ 3
 
 //-----------------------------------------------------------------------------
 
-const byte SCR_W = 48;
-const byte SCR_H = 30;
+const byte SCR_W = 48
+const byte SCR_H = 30
 
-const word LMS = $2000; // Memory address for character data (first text row)
-const word LFS = $2600; // Memory address for character color data (first text row)
-const word LBS = $2c00; // Memory address for background color data (first text row)
-const word LCG = $3800; // Character generator memory address (8x8 font)
+const word LMS = $2000 // Memory address for character data (first text row)
+const word LFS = $2600 // Memory address for character color data (first text row)
+const word LBS = $2c00 // Memory address for background color data (first text row)
+const word LCG = $3800 // Character generator memory address (8x8 font)
 
 const array(byte) DL align(fast) = [
     $f3,                            // LMS + LFS + LBS + LCG
@@ -76,7 +76,7 @@ macro asm void x65_init() {
 //-----------------------------------------------------------------------------
 
 macro void cgia_init() {
-    cgia_planes = 0;                                    // disable all planes
+    cgia_planes = 0                                     // disable all planes
 
     screen = LMS
     // parallelto    - risky thing
@@ -89,7 +89,7 @@ macro void cgia_init() {
     cgia_plane0_row_height = 7                          // 8 rows per character
     cgia_offset0 = DL.addr                              // point plane0 to DL
 
-    cgia_planes = 1;                                    // activate plane0
+    cgia_planes = 1                                     // activate plane0
 }
 
 //-----------------------------------------------------------------------------
@@ -104,20 +104,20 @@ void plasma() {
     _c1b = c1B
 
     for i, SCR_W - 1, downto, 0 {
-        xbuf[i] = SINUS_TABLE[_c1a] + SINUS_TABLE[_c1b];
+        xbuf[i] = SINUS_TABLE[_c1a] + SINUS_TABLE[_c1b]
         _c1a += 3
         _c1b += 7
     }
 
     for ii, SCR_H - 1, downto, 0 {
-        tmp = SINUS_TABLE[_c1a] + SINUS_TABLE[_c1b];
+        tmp = SINUS_TABLE[_c1a] + SINUS_TABLE[_c1b]
 
         _c1a += 4
         _c1b += 9
 
         for i, SCR_W - 1, downto, 0 {
-            screen[i] = lookupDiv16[xbuf[i] + tmp];
-            color[i] = screen[i];
+            screen[i] = lookupDiv16[xbuf[i] + tmp]
+            color[i] = screen[i]
         }
 
         screen += SCR_W
