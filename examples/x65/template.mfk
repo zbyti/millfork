@@ -1,0 +1,27 @@
+byte tmp0 @ 0
+byte tmp1 @ 1
+
+macro asm void x65_init() {
+    sei                     ; disable IRQ
+    cld                     ; clear decimal mode
+
+    ldx #
+    txs                     ; initialize stack pointer
+
+    lda #%10000000
+    sta cgia_int_enable     ; trigger NMI on VBL
+}
+
+interrupt asm void vbl() {
+    inc tmp0
+    sta cgia_int_status
+    rti
+}
+
+void main() {
+    x65_init()
+
+    while(true) {
+        tmp1 += 1
+    }
+}
