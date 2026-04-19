@@ -14,7 +14,7 @@ const byte SCR_H = 30;
 const word LMS = $2000; // Memory address for character data (first text row)
 const word LFS = $2600; // Memory address for character color data (first text row)
 const word LBS = $2c00; // Memory address for background color data (first text row)
-const word LCG = $3800; // Character generator memory address (8x8 font, font file must include a header)
+const word LCG = $3800; // Character generator memory address (8x8 font)
 
 const array(byte) DL align(fast) = [
     $f3,                            // LMS + LFS + LBS + LCG
@@ -116,8 +116,8 @@ void plasma() {
         _c1b += 9
 
         for i, SCR_W - 1, downto, 0 {
-          screen[i] = lookupDiv16[xbuf[i] + tmp];
-          column[i] = screen[i];
+            screen[i] = lookupDiv16[xbuf[i] + tmp];
+            column[i] = screen[i];
         }
 
         screen += SCR_W
