@@ -1,0 +1,6 @@
+#if not(X65)
+#warn x65_hardware module should be used only on X65 computer-compatible targets
+#endif
+
+import x65_cgia
+import x65_ria

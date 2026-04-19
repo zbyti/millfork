@@ -1,0 +1,26 @@
+// X65 CGIA hardware
+
+#if not(X65)
+#warn x65_cgia module should be used only on X65 computer-compatible targets
+#endif
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+const byte CGIA_DL_MODE_BIT  = %00001000
+const byte CGIA_DL_DLI_BIT   = %10000000
+const byte CGIA_DL_STORE_BIT = %01000000
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+volatile byte cgia_raster               @$FF10 // Raster Counter
+volatile byte cgia_int_enable           @$FF1A // RST Interrupt enabled
+volatile byte cgia_int_status           @$FF1B // RST Interrupt status
+volatile byte cgia_planes               @$FF30
+volatile byte cgia_back_color           @$FF31
+volatile word cgia_offset0              @$FF38
+volatile byte cgia_plane0               @$FF40
+volatile byte cgia_plane0_flags         @$FF40
+volatile byte cgia_plane0_row_height    @$FF42
+volatile byte cgia_plane0_stride        @$FF43
+volatile byte cgia_plane0_shared_color1 @$FF48
+volatile byte cgia_plane0_shared_color2 @$FF49

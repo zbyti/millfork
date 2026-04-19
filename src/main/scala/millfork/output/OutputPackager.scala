@@ -137,7 +137,7 @@ case class SymbolAddressOutput(symbol: String, bonus: Int) extends OutputPackage
   def packageOutput(flc: FileLayoutCollector, mem: CompiledMemory, bank: String): Array[Byte] = {
     val b = mem.banks(bank)
     val x = mem.getAddress(symbol) + bonus
-    Array(b.end.toByte, b.end.>>(8).toByte)
+    Array(x.toByte, x.>>(8).toByte)
   }
 }
 

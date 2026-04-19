@@ -1,0 +1,7 @@
+// X65 RIA hardware
+
+#if not(X65)
+#warn x65_ria module should be used only on X65 computer-compatible targets
+#endif
+
+volatile byte gpio_in0 @$FF80

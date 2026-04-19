@@ -1,0 +1,153 @@
+//-----------------------------------------------------------------------------
+// Plasma effect for X65 https://x65.zone/
+//-----------------------------------------------------------------------------
+
+byte b      @ 0
+word w      @ 1
+pointer p   @ 3
+
+//-----------------------------------------------------------------------------
+
+const byte SCR_W = 48;
+const byte SCR_H = 30;
+
+const word LMS = $2000; // Memory address for character data (first text row)
+const word LFS = $2600; // Memory address for character color data (first text row)
+const word LBS = $2c00; // Memory address for background color data (first text row)
+const word LCG = $3800; // Character generator memory address (8x8 font, font file must include a header)
+
+const array(byte) DL align(fast) = [
+    $f3,                            // LMS + LFS + LBS + LCG
+    @word[LMS],
+    @word[LFS],
+    @word[LBS],
+    @word[LCG],
+    $a,$a,$a,$a,$a,$a,$a,$a,$a,$a,  // MODE2
+    $a,$a,$a,$a,$a,$a,$a,$a,$a,$a,  // MODE2
+    $a,$a,$a,$a,$a,$a,$a,$a,$a,$a,  // MODE2
+    $82,@word[DL.addr]              // JMP to begin of DL and wait for Vertical BLank
+]
+
+const array(byte) CHARSET @ LCG = [
+    $00, $00, $00, $00, $00, $00, $00, $00,
+    $00, $00, $00, $10, $00, $00, $00, $00,
+    $00, $00, $18, $18, $00, $00, $00, $00,
+    $00, $00, $38, $38, $38, $00, $00, $00,
+    $00, $00, $3c, $3c, $3c, $3c, $00, $00,
+    $00, $7c, $7c, $7c, $7c, $7c, $00, $00,
+    $00, $7e, $7e, $7e, $7e, $7e, $7e, $00,
+    $fe, $fe, $fe, $fe, $fe, $fe, $fe, $00,
+    $00, $7f, $7f, $7f, $7f, $7f, $7f, $7f,
+    $00, $7e, $7e, $7e, $7e, $7e, $7e, $00,
+    $00, $7c, $7c, $7c, $7c, $7c, $00, $00,
+    $00, $00, $3c, $3c, $3c, $3c, $00, $00,
+    $00, $00, $38, $38, $38, $00, $00, $00,
+    $00, $00, $18, $18, $00, $00, $00, $00,
+    $00, $00, $00, $08, $00, $00, $00, $00,
+    $00, $00, $00, $00, $00, $00, $00, $00
+  ]
+
+const array SINUS_TABLE @ $4000 = [for i, 0, until, 256 [sin((i * 256) / 256, 100)]]
+
+//-----------------------------------------------------------------------------
+
+byte c1A
+byte c1B
+
+pointer screen @ $60
+pointer column @ $62
+
+array(byte) lookupDiv16[256] @ $4100
+array(byte) xbuf[48]         @ $4200
+
+//-----------------------------------------------------------------------------
+
+macro asm void x65_init() {
+    sei                     ; disable IRQ
+    cld                     ; clear decimal mode
+
+    ldx #$ff
+    txs                     ; initialize stack pointer
+
+    lda #%10000000
+    sta cgia_int_enable     ; trigger NMI on VBL
+}
+
+//-----------------------------------------------------------------------------
+
+macro void cgia_init() {
+    cgia_planes = 0;                                    // disable all planes
+
+    screen = LMS
+    // parallelto    - risky thing
+    // paralleluntil - risky thing
+    for w, ($600 * 3) - 1, downto, 0  { screen[w] = 0 } // clear screen
+
+    p = cgia_plane0.addr
+    for b, 9, downto, 0 { p[b] = 0 }                    // clear CGIA_PLANE0 registers
+
+    cgia_plane0_row_height = 7                          // 8 rows per character
+    cgia_offset0 = DL.addr                              // point plane0 to DL
+
+    cgia_planes = 1;                                    // activate plane0
+}
+
+//-----------------------------------------------------------------------------
+
+void plasma() {
+    byte _c1a, _c1b
+    byte i, ii, tmp
+
+    screen = LMS
+    column = LFS
+    _c1a = c1A
+    _c1b = c1B
+
+    for i, SCR_W - 1, downto, 0 {
+        xbuf[i] = SINUS_TABLE[_c1a] + SINUS_TABLE[_c1b];
+        _c1a += 3
+        _c1b += 7
+    }
+
+    for ii, SCR_H - 1, downto, 0 {
+        tmp = SINUS_TABLE[_c1a] + SINUS_TABLE[_c1b];
+
+        _c1a += 4
+        _c1b += 9
+
+        for i, SCR_W - 1, downto, 0 {
+          screen[i] = lookupDiv16[xbuf[i] + tmp];
+          column[i] = screen[i];
+        }
+
+        screen += SCR_W
+        column += SCR_W
+    }
+
+    c1A += 3
+    c1B -= 5
+}
+
+//-----------------------------------------------------------------------------
+
+interrupt asm void vbl() {
+    jsr plasma
+    sta cgia_int_status
+    rti
+}
+
+//-----------------------------------------------------------------------------
+
+void main() {
+    x65_init()
+
+    c1A = 1
+    c1B = 5
+
+    cgia_init()
+
+    // store values divided by 16
+    for b:lookupDiv16 { lookupDiv16[b] = b >> 4 }
+
+    while(true) {}
+}
