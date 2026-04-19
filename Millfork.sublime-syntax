@@ -1,0 +1,110 @@
+%YAML 1.2
+---
+name: Millfork
+scope: source.mfk
+file_extensions: [mfk]
+
+contexts:
+  main:
+    - include: comments
+    - include: preprocessor
+    - include: numbers
+    - include: strings
+    - include: keywords
+    - include: operators
+    - include: punctuation
+
+  comments:
+    - match: '//'
+      scope: punctuation.definition.comment.mfk
+      push:
+        - meta_scope: comment.line.double-slash.mfk
+        - match: $\n?
+          pop: true
+    - match: ';'
+      scope: punctuation.definition.comment.mfk
+      push:
+        - meta_scope: comment.line.semicolon.mfk
+        - match: $\n?
+          pop: true
+    - match: '/\*'
+      scope: punctuation.definition.comment.begin.mfk
+      push:
+        - meta_scope: comment.block.mfk
+        - match: '\*/'
+          scope: punctuation.definition.comment.end.mfk
+          pop: true
+
+  preprocessor:
+    # Poprawiona reguła obejmująca wszystkie warianty #elseif / #elsif / #else if
+    - match: '^\s*#\s*(if|else|else\s*if|elseif|elsif|endif|use|warn|error|info|fatal|pragma|infoeval|define)\b'
+      scope: keyword.control.preprocessor.mfk
+
+  numbers:
+    - match: '\b0[bB][01]+\b|\%[01]+\b'
+      scope: constant.numeric.binary.mfk
+    - match: '\b0[oOqQ][0-7]+\b'
+      scope: constant.numeric.octal.mfk
+    - match: '\b0[xX][0-9A-Fa-f]+\b|\$[0-9A-Fa-f]+\b|\b[0-9A-Fa-f]+[hH]\b'
+      scope: constant.numeric.hex.mfk
+    - match: '\b[0-9]+\b'
+      scope: constant.numeric.decimal.mfk
+    - match: ':-+|:\++'
+      scope: constant.language.unnamed-label.mfk
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.mfk
+      push:
+        - meta_scope: string.quoted.double.mfk
+        - match: '\\.'
+          scope: constant.character.escape.mfk
+        - match: '"'
+          scope: punctuation.definition.string.end.mfk
+          pop: true
+
+  keywords:
+    # Typy danych
+    - match: '\b(void|bool|byte|sbyte|ubyte|word|farword|pointer|farpointer|long|word_be|word_le|long_be|long_le|file|int[0-9]+|signed[0-9]+|unsigned[0-9]+|set_carry|set_zero|set_overflow|set_negative|clear_carry|clear_zero|clear_overflow|clear_negative)\b'
+      scope: storage.type.mfk
+
+    # Modyfikatory
+    - match: '\b(const|volatile|register|static|stack|asm|inline|noinline|interrupt|kernal_interrupt|macro|reentrant|extern|segment|align|fast)\b'
+      scope: storage.modifier.mfk
+
+    # Kontrola przepływu
+    - match: '\b(if|else|for|while|do|until|to|downto|parallelto|paralleluntil|return|break|continue|goto|default)\b'
+      scope: keyword.control.mfk
+
+    # Inne słowa kluczowe
+    - match: '\b(import|array|struct|union|enum|alias|call|label)\b'
+      scope: keyword.other.mfk
+
+    # Wbudowane funkcje i stałe
+    - match: '\b(not|hi|lo|nonet|sizeof|sin|cos|tan|defined|true|false|nullptr|nullchar)\b'
+      scope: support.function.mfk
+
+    # Kodowania znaków
+    - match: '\b(default|defaultz|scr|scrz|petscii|ascii|petscr|pet|atascii|atari|bbc|sinclair|apple2|jis|jisx|iso_de|iso_yu|iso_no|iso_dk|iso_se|iso_fi|petsciiz|asciiz|petscrz|petz|atasciiz|atariz|bbcz|sinclairz|apple2z|jisz|jisxz|iso_dez|iso_yuz|iso_noz|iso_dkz|iso_sez|iso_fiz|utf8|utf16le|utf16be|latin0|latin9|iso8859_15|zx80|zx81|vectrex|koi7n2|short_koi|msx_intl|msx_us|msx_uk|msx_de|msx_fr|msx_es|msx_ru|msx_jp|msx_br|utf8z|utf16lez|utf16bez|latin0z|latin9z|iso8859_15z|zx80z|zx81z|vectrexz|koi7n2z|short_koiz|msx_intlz|msx_usz|msx_ukz|msx_dez|msx_frz|msx_esz|msx_ruz|msx_jpz|msx_brz)\b'
+      scope: constant.language.mfk
+
+  operators:
+    # Operatory specyficzne Millforka
+    - match: '(\$\+|\$\-|\$\*|\$\<{2}|\$\>{2}|\$\+\=|\$\-\=|\$\*\=|\$\<{2}\=|\$\>{2}\=)'
+      scope: keyword.operator.millfork.special
+    - match: '(\+''|\-''|\*''|\<{2}''|\>{2}''|\+''\=|\-''\=|\*''\=|\<{2}''\=|\>{2}''\=)'
+      scope: keyword.operator.millfork.special
+
+    # Operatory asemblera
+    - match: '#'
+      scope: keyword.operators.immediate.mfk
+    - match: '\.(?i:mod|bitnot|bitand|bitor|shl|shr|and|or|not|xor)\b'
+      scope: keyword.operators.word.mfk
+
+    # Standardowe operatory
+    - match: '(\+|\-|\*|/|%|<{2}|>{2}|==|!=|<=|>=|<|>|=|\+=|-=|\*=|/=|&&|&|\|{2}|\||\^|\^=)'
+      scope: keyword.operator.mfk
+
+  punctuation:
+    - match: '(\{|\}|\(|\)|\[|\]|@|#|;|,|\.)'
+      scope: punctuation.separator.mfk
