@@ -55,7 +55,7 @@ byte c1A
 byte c1B
 
 pointer screen @ $60
-pointer column @ $62
+pointer color  @ $62
 
 array(byte) lookupDiv16[256] @ $4100
 array(byte) xbuf[48]         @ $4200
@@ -99,7 +99,7 @@ void plasma() {
     byte i, ii, tmp
 
     screen = LMS
-    column = LFS
+    color = LFS
     _c1a = c1A
     _c1b = c1B
 
@@ -117,11 +117,11 @@ void plasma() {
 
         for i, SCR_W - 1, downto, 0 {
             screen[i] = lookupDiv16[xbuf[i] + tmp];
-            column[i] = screen[i];
+            color[i] = screen[i];
         }
 
         screen += SCR_W
-        column += SCR_W
+        color += SCR_W
     }
 
     c1A += 3
