@@ -1,26 +1,212 @@
 // X65 CGIA hardware
+// https://docs.x65.zone/
+// https://docs.google.com/spreadsheets/d/1mADeuKo_zZCQmT42eyEhKunW5CIMZ9LZTW8EDv7rU7w/
 
 #if not(X65)
 #warn x65_cgia module should be used only on X65 computer-compatible targets
 #endif
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Multicolor encoding
+// https://csbruce.com/cbm/hacking/hacking12.txt
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//    00   background color
+//    01   same as "off" color in hires mode
+//    10   same as "on" color in hires mode
+//    11   another "background" color
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-const byte CGIA_DL_MODE_BIT  = %00001000
-const byte CGIA_DL_DLI_BIT   = %10000000
-const byte CGIA_DL_STORE_BIT = %01000000
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Hold-And-Modify MODE6
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//    HAM commands are 6bit each, 4 screen pixels packed in 3 bytes.
+//    [CCCDDD] - C -command bit, D - data bit
+//
+//     000 - load base color index at DDD (one of 8 base colors)
+//     001 - blend current color with color at DDD
+//
+//     CCS - CC:
+//           01 - Modify Red channel
+//           10 - Modify Green channel
+//           11 - Modify Blue channel
+//
+//           S: sign, 0 +delta, 1 -delta
+//           DDD: delta (2's complement, with above sign bit)
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Display List Values
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//    bit 3 unset (0-7) - instructions:
+//    Bits 0-2 encode the instruction:
+//    0 - empty lines filled with fill color
+//        bits 6-4 - how many
+//        bit 7 - DLI
+//    1 - [TBD]
+//    2 - JMP Display List (Load DL offset address)
+//        - DLI bit set - wait for Vertical Blank
+//    3 - Load Memory - bits 4-7 flag which offsets will follow
+//        4 - LMS - memory scan
+//        5 - LFS - color scan
+//        6 - LBS - background scan
+//        7 - LCG - character generator address
+//    4 - Load 8 bit value to Register Offset
+//    5 - Load 16 bit value to Register Offset
+//        bits 6-4 - register index
+//    6 - [TBD]
+//    7 - [TBD]
+//
+//    bit 3 set (8-F) - generate mode row:
+//    Bits 0-2 encode the mode:
+//    0 - palette text/tile mode
+//    1 - palette bitmap mode
+//    2 - attribute text/tile mode
+//    3 - attribute bitmap mode
+//    4 - [TBD]
+//    5 - [TBD]
+//    6 - Hold-and-Modify (HAM) mode
+//    7 - affine transform chunky pixel mode
+//
+//    bit 7 - trigger DLI - Display List Interrupt
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+const byte CGIA_MODE_HIRES_BIT                  = %00000001
+const byte CGIA_MODE_INTERLACE_BIT              = %00000010
+
+const byte CGIA_REG_INT_FLAG_VBI                = %10000000
+const byte CGIA_REG_INT_FLAG_DLI                = %01000000
+const byte CGIA_REG_INT_FLAG_RSI                = %00100000
+
+// --- DISPLAY LIST INSTRUCTIONS ---
+const byte CGIA_DL_INS_EMPTY_LINES              = $00
+const byte CGIA_DL_INS_RESERVED_1               = $01
+const byte CGIA_DL_INS_JUMP                     = $02
+const byte CGIA_DL_INS_DL_INTERRUPT             = %10000000
+const byte CGIA_DL_INS_LOAD_MEMORY              = $03
+const byte CGIA_DL_INS_LM_MEMORY_SCAN           = %00010000
+const byte CGIA_DL_INS_LM_FOREGROUND_SCAN       = %00100000
+const byte CGIA_DL_INS_LM_BACKGROUND_SCAN       = %01000000
+const byte CGIA_DL_INS_LM_CHARACTER_GENERATOR   = %10000000
+const byte CGIA_DL_INS_LOAD_REG8                = $04
+const byte CGIA_DL_INS_LOAD_REG16               = $05
+const byte CGIA_DL_INS_RESERVED_6               = $06
+const byte CGIA_DL_INS_RESERVED_7               = $07
+
+const byte CGIA_DL_MODE_PALETTE_TEXT            = $08
+const byte CGIA_DL_MODE_PALETTE_BITMAP          = $09
+const byte CGIA_DL_MODE_ATTRIBUTE_TEXT          = $0A
+const byte CGIA_DL_MODE_ATTRIBUTE_BITMAP        = $0B
+const byte CGIA_DL_MODE_HOLD_AND_MODIFY         = $0E
+const byte CGIA_DL_MODE_AFFINE_TRANSFORM        = $0F
+
+const byte CGIA_DL_MODE_BIT                     = %00001000
+const byte CGIA_DL_DOUBLE_WIDTH_BIT             = %00010000
+const byte CGIA_DL_MULTICOLOR_BIT               = %00100000
+const byte CGIA_DL_RESERVED_BIT                 = %01000000
+const byte CGIA_DL_DLI_BIT                      = %10000000
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// sprite flags:
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// 0-2 - width in bytes
+// 3 - [RESERVED]
+// 4 - double-width
+// 5 - multicolor
+// 6 - mirror X
+// 7 - mirror Y
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+const byte SPRITE_MASK_WIDTH                    = %00000111
+const byte SPRITE_MASK_RESERVED                 = %00001000
+const byte SPRITE_MASK_DOUBLE_WIDTH             = %00010000
+const byte SPRITE_MASK_MULTICOLOR               = %00100000
+const byte SPRITE_MASK_MIRROR_X                 = %01000000
+const byte SPRITE_MASK_MIRROR_Y                 = %10000000
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// plane flags:
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// 0 - color 0 is transparent
+// 1-2 - [RESERVED]
+// 3 - border is transparent
+// 4 - double-width pixel
+// 5 - multicolor-pixel
+// 6,7 - pixel bits: 00 - 1bit, 2 colors; 01 - 2bit, 4 colors;
+//                   10 - 3bit, 8 colors; 11 - 4bit, 8 colors + half-bright
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+const byte PLANE_MASK_TRANSPARENT           = %00000001
+const byte PLANE_MASK_BORDER_TRANSPARENT    = %00001000
+const byte PLANE_MASK_DOUBLE_WIDTH          = %00010000
+const byte PLANE_MASK_MULTICOLOR            = %00100000
+const byte PLANE_MASK_PIXEL_BITS            = %11000000
+
+const byte PLANE_MASK_FROM_DL               = PLANE_MASK_DOUBLE_WIDTH | PLANE_MASK_MULTICOLOR
+
+const byte PLANE_BITS_1BPP                 = (%00 << 6)
+const byte PLANE_BITS_2BPP                 = (%01 << 6)
+const byte PLANE_BITS_3BPP                 = (%10 << 6)
+const byte PLANE_BITS_4BPP                 = (%11 << 6)
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// 16 registers for plane use
+// interpretation depends on plane type and active display list mode
+// BACKGROUND | HAM | AFFINE | SPRITES
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+struct plane_t {
+    byte flags                          // active_sprites
+    byte border_columns
+    byte row_height                     // start_y
+    byte stride                         // texture_bits | stop_y
+    byte scroll_x                       // u
+    byte offset_x                       // u
+    byte scroll_y                       // v
+    byte offset_y                       // v
+    byte shared_color0                  // du
+    byte shared_color1                  // du
+    byte color2                         // dv
+    byte color3                         // dv
+    byte color4                         // dx
+    byte color5                         // dx
+    byte color6                         // dy
+    byte color7                         // dy
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// CGIA registers
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+struct cgia_t {
+    byte mode                           // Chip mode                    | currently reserved for future use - must be 0
+    byte bckgnd_bank                    // Background Layers bank no    | third byte (23-16 bits) of generated address
+    byte sprite_bank                    // Sprites bank no              | third byte (23-16 bits) of generated address
+    array(byte) ctl_reserved[13]
+    word raster                         // Raster Counter
+    byte rst_status                     // Raster Status Bits           | [EVEN/ODD x x x x x x x]
+    array(byte) rst_reserved1[5]
+    word int_raster                     // Interrupt register           | Write to set raster line generating RSI
+    byte int_enable                     // Interrupt enabled flags      | [VBI DLI RSI x x x x x]
+    byte int_status                     // Interrupt status             | [VBI DLI RSI x x x x x]
+    array(byte) rst_reserved2[4]
+    array(byte) reserved[16]
+    byte planes                         // Plane enable and type        | [TTTTEEEE] EEEE - enable bits, TTTT - type (0 bckgnd, 1 sprite)
+    byte order                          // Plane order                  | plane order permutation - SJT ordering
+    array(byte) pln_reserved1[2]
+    byte back_color                     // Backdrop/Border color        | palette index
+    array(byte) pln_reserved2[3]
+    word offset0                        // PLANE0                       | DisplayList or SpriteDescriptor table start, interpretation depends on plane type in PLANES register
+    word offset1                        // PLANE1                       | DisplayList or SpriteDescriptor table start, interpretation depends on plane type in PLANES register
+    word offset2                        // PLANE2                       | DisplayList or SpriteDescriptor table start, interpretation depends on plane type in PLANES register
+    word offset3                        // PLANE3                       | DisplayList or SpriteDescriptor table start, interpretation depends on plane type in PLANES register
+    plane_t plane0
+    plane_t plane1
+    plane_t plane2
+    plane_t plane3
+}
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-volatile byte cgia_raster               @$FF10 // Raster Counter
-volatile byte cgia_int_enable           @$FF1A // RST Interrupt enabled
-volatile byte cgia_int_status           @$FF1B // RST Interrupt status
-volatile byte cgia_planes               @$FF30
-volatile byte cgia_back_color           @$FF31
-volatile word cgia_offset0              @$FF38
-volatile byte cgia_plane0               @$FF40
-volatile byte cgia_plane0_flags         @$FF40
-volatile byte cgia_plane0_row_height    @$FF42
-volatile byte cgia_plane0_stride        @$FF43
-volatile byte cgia_plane0_shared_color1 @$FF48
-volatile byte cgia_plane0_shared_color2 @$FF49
+volatile cgia_t cgia @ $FF00
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

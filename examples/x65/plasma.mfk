@@ -69,26 +69,26 @@ macro asm void x65_init() {
     txs                     ; initialize stack pointer
 
     lda #%10000000
-    sta cgia_int_enable     ; trigger NMI on VBL
+    sta cgia.int_enable     ; trigger NMI on VBL
 }
 
 //-----------------------------------------------------------------------------
 
 macro void cgia_init() {
-    cgia_planes = 0                                     // disable all planes
+    cgia.planes = 0                                     // disable all planes
 
     screen = LMS
     // parallelto    - risky thing
     // paralleluntil - risky thing
     for w, ($600 * 3) - 1, downto, 0 { screen[w] = 0 }  // clear screen
 
-    p = cgia_plane0.addr
+    p = cgia.plane0.addr
     for b, 9, downto, 0 { p[b] = 0 }                    // clear CGIA_PLANE0 registers
 
-    cgia_plane0_row_height = 7                          // 8 rows per character
-    cgia_offset0 = DL.addr                              // point plane0 to DL
+    cgia.plane0.row_height = 7                          // 8 rows per character
+    cgia.offset0 = DL.addr                              // point plane0 to DL
 
-    cgia_planes = 1                                     // activate plane0
+    cgia.planes = 1                                     // activate plane0
 }
 
 //-----------------------------------------------------------------------------
@@ -131,7 +131,7 @@ void plasma() {
 
 interrupt asm void vbl() {
     jsr plasma
-    sta cgia_int_status
+    stz cgia.int_status
     rti
 }
 
@@ -146,3 +146,5 @@ void main() {
 
     while true {}
 }
+
+//-----------------------------------------------------------------------------
