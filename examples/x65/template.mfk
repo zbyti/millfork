@@ -21,7 +21,7 @@ interrupt asm void vbl() {
 void main() {
     x65_init()
 
-    while(true) {
+    while true {
         tmp1 += 1
     }
 }

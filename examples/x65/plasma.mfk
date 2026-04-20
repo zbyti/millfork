@@ -149,5 +149,5 @@ void main() {
     // store values divided by 16
     for b:lookupDiv16 { lookupDiv16[b] = b >> 4 }
 
-    while(true) {}
+    while true {}
 }
