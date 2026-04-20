@@ -1,38 +1,20 @@
 // X65 CGIA hardware
 // https://docs.x65.zone/
 // https://docs.google.com/spreadsheets/d/1mADeuKo_zZCQmT42eyEhKunW5CIMZ9LZTW8EDv7rU7w/
+// https://github.com/X65/examples/blob/main/src/cgia.asm
 
 #if not(X65)
 #warn x65_cgia module should be used only on X65 computer-compatible targets
 #endif
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Multicolor encoding
-// https://csbruce.com/cbm/hacking/hacking12.txt
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//    00   background color
-//    01   same as "off" color in hires mode
-//    10   same as "on" color in hires mode
-//    11   another "background" color
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Hold-And-Modify MODE6
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//    HAM commands are 6bit each, 4 screen pixels packed in 3 bytes.
-//    [CCCDDD] - C -command bit, D - data bit
-//
-//     000 - load base color index at DDD (one of 8 base colors)
-//     001 - blend current color with color at DDD
-//
-//     CCS - CC:
-//           01 - Modify Red channel
-//           10 - Modify Green channel
-//           11 - Modify Blue channel
-//
-//           S: sign, 0 +delta, 1 -delta
-//           DDD: delta (2's complement, with above sign bit)
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+const byte CGIA_MODE_HIRES_BIT                  = %00000001
+const byte CGIA_MODE_INTERLACE_BIT              = %00000010
+
+const byte CGIA_REG_INT_FLAG_VBI                = %10000000
+const byte CGIA_REG_INT_FLAG_DLI                = %01000000
+const byte CGIA_REG_INT_FLAG_RSI                = %00100000
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Display List Values
@@ -70,13 +52,6 @@
 //    bit 7 - trigger DLI - Display List Interrupt
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-const byte CGIA_MODE_HIRES_BIT                  = %00000001
-const byte CGIA_MODE_INTERLACE_BIT              = %00000010
-
-const byte CGIA_REG_INT_FLAG_VBI                = %10000000
-const byte CGIA_REG_INT_FLAG_DLI                = %01000000
-const byte CGIA_REG_INT_FLAG_RSI                = %00100000
-
 // --- DISPLAY LIST INSTRUCTIONS ---
 const byte CGIA_DL_INS_EMPTY_LINES              = $00
 const byte CGIA_DL_INS_RESERVED_1               = $01
@@ -106,22 +81,14 @@ const byte CGIA_DL_RESERVED_BIT                 = %01000000
 const byte CGIA_DL_DLI_BIT                      = %10000000
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// sprite flags:
+// Multicolor encoding
+// https://csbruce.com/cbm/hacking/hacking12.txt
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// 0-2 - width in bytes
-// 3 - [RESERVED]
-// 4 - double-width
-// 5 - multicolor
-// 6 - mirror X
-// 7 - mirror Y
+//    00   background color
+//    01   same as "off" color in hires mode
+//    10   same as "on" color in hires mode
+//    11   another "background" color
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-const byte SPRITE_MASK_WIDTH                    = %00000111
-const byte SPRITE_MASK_RESERVED                 = %00001000
-const byte SPRITE_MASK_DOUBLE_WIDTH             = %00010000
-const byte SPRITE_MASK_MULTICOLOR               = %00100000
-const byte SPRITE_MASK_MIRROR_X                 = %01000000
-const byte SPRITE_MASK_MIRROR_Y                 = %10000000
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // plane flags:
@@ -149,35 +116,117 @@ const byte PLANE_BITS_3BPP                 = (%10 << 6)
 const byte PLANE_BITS_4BPP                 = (%11 << 6)
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// sprite flags:
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// 0-2 - width in bytes
+// 3 - [RESERVED]
+// 4 - double-width
+// 5 - multicolor
+// 6 - mirror X
+// 7 - mirror Y
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+const byte SPRITE_MASK_WIDTH                    = %00000111
+const byte SPRITE_MASK_RESERVED                 = %00001000
+const byte SPRITE_MASK_DOUBLE_WIDTH             = %00010000
+const byte SPRITE_MASK_MULTICOLOR               = %00100000
+const byte SPRITE_MASK_MIRROR_X                 = %01000000
+const byte SPRITE_MASK_MIRROR_Y                 = %10000000
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+struct cgia_bckgnd_regs {
+    byte flags
+    byte border_columns
+    byte row_height
+    byte stride
+    byte scroll_x
+    byte offset_x
+    byte scroll_y
+    byte offset_y
+    byte shared_color0
+    byte shared_color1
+    byte color2
+    byte color3
+    byte color4
+    byte color5
+    byte color6
+    byte color7
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Hold-And-Modify MODE6
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//    HAM commands are 6bit each, 4 screen pixels packed in 3 bytes.
+//    [CCCDDD] - C -command bit, D - data bit
+//
+//     000 - load base color index at DDD (one of 8 base colors)
+//     001 - blend current color with color at DDD
+//
+//     CCS - CC:
+//           01 - Modify Red channel
+//           10 - Modify Green channel
+//           11 - Modify Blue channel
+//
+//           S: sign, 0 +delta, 1 -delta
+//           DDD: delta (2's complement, with above sign bit)
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+struct cgia_ham_regs {
+    byte flags
+    byte border_columns
+    byte row_height
+    array(byte) reserved[5]
+    byte color0
+    byte color1
+    byte color2
+    byte color3
+    byte color4
+    byte color5
+    byte color6
+    byte color7
+}
+
+struct cgia_affine_regs {
+    byte flags
+    byte border_columns
+    byte row_height
+    byte texture_bits                   // 2-0 texture_width_bits, 6-4 texture_height_bits
+    word u
+    word v
+    word du
+    word dv
+    word dx
+    word dy
+}
+
+struct cgia_sprite_regs {
+    byte active                         // bitmask for active sprites
+    byte border_columns
+    byte start_y
+    byte stop_y
+    array(byte) reserved[12]
+}
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // 16 registers for plane use
 // interpretation depends on plane type and active display list mode
 // BACKGROUND | HAM | AFFINE | SPRITES
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-struct plane_t {
-    byte flags                          // active_sprites
-    byte border_columns
-    byte row_height                     // start_y
-    byte stride                         // texture_bits | stop_y
-    byte scroll_x                       // u
-    byte offset_x                       // u
-    byte scroll_y                       // v
-    byte offset_y                       // v
-    byte shared_color0                  // du
-    byte shared_color1                  // du
-    byte color2                         // dv
-    byte color3                         // dv
-    byte color4                         // dx
-    byte color5                         // dx
-    byte color6                         // dy
-    byte color7                         // dy
+union plane {
+    cgia_bckgnd_regs bckgnd
+    cgia_ham_regs ham
+    cgia_affine_regs affine
+    cgia_sprite_regs sprite
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // CGIA registers
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-struct cgia_t {
+struct cgia_regs {
     byte mode                           // Chip mode                    | currently reserved for future use - must be 0
     byte bckgnd_bank                    // Background Layers bank no    | third byte (23-16 bits) of generated address
     byte sprite_bank                    // Sprites bank no              | third byte (23-16 bits) of generated address
@@ -199,14 +248,14 @@ struct cgia_t {
     word offset1                        // PLANE1                       | DisplayList or SpriteDescriptor table start, interpretation depends on plane type in PLANES register
     word offset2                        // PLANE2                       | DisplayList or SpriteDescriptor table start, interpretation depends on plane type in PLANES register
     word offset3                        // PLANE3                       | DisplayList or SpriteDescriptor table start, interpretation depends on plane type in PLANES register
-    plane_t plane0
-    plane_t plane1
-    plane_t plane2
-    plane_t plane3
+    plane plane0
+    plane plane1
+    plane plane2
+    plane plane3
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-volatile cgia_t cgia @ $FF00
+volatile cgia_regs cgia @ $FF00
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
