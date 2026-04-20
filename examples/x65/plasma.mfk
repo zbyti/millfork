@@ -85,7 +85,7 @@ macro void cgia_init() {
     p = cgia.plane0.addr
     for b, 9, downto, 0 { p[b] = 0 }                    // clear CGIA_PLANE0 registers
 
-    cgia.plane0.bckgnd.row_height = 7                          // 8 rows per character
+    cgia.plane0.bckgnd.row_height = 7                   // 8 rows per character
     cgia.offset0 = DL.addr                              // point plane0 to DL
 
     cgia.planes = 1                                     // activate plane0
