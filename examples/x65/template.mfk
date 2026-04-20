@@ -5,7 +5,7 @@ macro asm void x65_init() {
     sei                     ; disable IRQ
     cld                     ; clear decimal mode
 
-    ldx #
+    ldx #$ff
     txs                     ; initialize stack pointer
 
     lda #%10000000
