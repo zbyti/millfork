@@ -51,8 +51,7 @@ const array SINUS_TABLE @ $4000 = [for i, 0, until, 256 [sin((i * 256) / 256, 10
 
 //-----------------------------------------------------------------------------
 
-byte c1A
-byte c1B
+byte c1A = 1, c1B = 5
 
 pointer screen @ $60
 pointer color  @ $62
@@ -140,10 +139,6 @@ interrupt asm void vbl() {
 
 void main() {
     x65_init()
-
-    c1A = 1
-    c1B = 5
-
     cgia_init()
 
     // store values divided by 16
