@@ -102,18 +102,18 @@ const byte CGIA_DL_DLI_BIT                      = %10000000
 //                   10 - 3bit, 8 colors; 11 - 4bit, 8 colors + half-bright
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-const byte PLANE_MASK_TRANSPARENT           = %00000001
-const byte PLANE_MASK_BORDER_TRANSPARENT    = %00001000
-const byte PLANE_MASK_DOUBLE_WIDTH          = %00010000
-const byte PLANE_MASK_MULTICOLOR            = %00100000
-const byte PLANE_MASK_PIXEL_BITS            = %11000000
+const byte PLANE_MASK_TRANSPARENT               = %00000001
+const byte PLANE_MASK_BORDER_TRANSPARENT        = %00001000
+const byte PLANE_MASK_DOUBLE_WIDTH              = %00010000
+const byte PLANE_MASK_MULTICOLOR                = %00100000
+const byte PLANE_MASK_PIXEL_BITS                = %11000000
 
-const byte PLANE_MASK_FROM_DL               = PLANE_MASK_DOUBLE_WIDTH | PLANE_MASK_MULTICOLOR
+const byte PLANE_MASK_FROM_DL                   = PLANE_MASK_DOUBLE_WIDTH | PLANE_MASK_MULTICOLOR
 
-const byte PLANE_BITS_1BPP                 = (%00 << 6)
-const byte PLANE_BITS_2BPP                 = (%01 << 6)
-const byte PLANE_BITS_3BPP                 = (%10 << 6)
-const byte PLANE_BITS_4BPP                 = (%11 << 6)
+const byte PLANE_BITS_1BPP                      = (%00 << 6)
+const byte PLANE_BITS_2BPP                      = (%01 << 6)
+const byte PLANE_BITS_3BPP                      = (%10 << 6)
+const byte PLANE_BITS_4BPP                      = (%11 << 6)
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // sprite flags:
