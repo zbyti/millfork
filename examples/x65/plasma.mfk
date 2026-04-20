@@ -81,7 +81,7 @@ macro void cgia_init() {
     screen = LMS
     // parallelto    - risky thing
     // paralleluntil - risky thing
-    for w, ($600 * 3) - 1, downto, 0  { screen[w] = 0 } // clear screen
+    for w, ($600 * 3) - 1, downto, 0 { screen[w] = 0 }  // clear screen
 
     p = cgia_plane0.addr
     for b, 9, downto, 0 { p[b] = 0 }                    // clear CGIA_PLANE0 registers
