@@ -53,32 +53,32 @@ const byte CGIA_REG_INT_FLAG_RSI                = %00100000
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // --- DISPLAY LIST INSTRUCTIONS ---
-const byte CGIA_DL_INS_EMPTY_LINES              = $00
-const byte CGIA_DL_INS_RESERVED_1               = $01
-const byte CGIA_DL_INS_JUMP                     = $02
-const byte CGIA_DL_INS_DL_INTERRUPT             = %10000000
-const byte CGIA_DL_INS_LOAD_MEMORY              = $03
-const byte CGIA_DL_INS_LM_MEMORY_SCAN           = %00010000
-const byte CGIA_DL_INS_LM_FOREGROUND_SCAN       = %00100000
-const byte CGIA_DL_INS_LM_BACKGROUND_SCAN       = %01000000
-const byte CGIA_DL_INS_LM_CHARACTER_GENERATOR   = %10000000
-const byte CGIA_DL_INS_LOAD_REG8                = $04
-const byte CGIA_DL_INS_LOAD_REG16               = $05
-const byte CGIA_DL_INS_RESERVED_6               = $06
-const byte CGIA_DL_INS_RESERVED_7               = $07
+const byte DL_INS_EMPTY_LINES              = $00
+const byte DL_INS_RESERVED_1               = $01
+const byte DL_INS_JUMP                     = $02
+const byte DL_INS_DL_INTERRUPT             = %10000000
+const byte DL_INS_LOAD_MEMORY              = $03
+const byte DL_INS_LM_MEMORY_SCAN           = %00010000
+const byte DL_INS_LM_FOREGROUND_SCAN       = %00100000
+const byte DL_INS_LM_BACKGROUND_SCAN       = %01000000
+const byte DL_INS_LM_CHARACTER_GENERATOR   = %10000000
+const byte DL_INS_LOAD_REG8                = $04
+const byte DL_INS_LOAD_REG16               = $05
+const byte DL_INS_RESERVED_6               = $06
+const byte DL_INS_RESERVED_7               = $07
 
-const byte CGIA_DL_MODE_PALETTE_TEXT            = $08
-const byte CGIA_DL_MODE_PALETTE_BITMAP          = $09
-const byte CGIA_DL_MODE_ATTRIBUTE_TEXT          = $0A
-const byte CGIA_DL_MODE_ATTRIBUTE_BITMAP        = $0B
-const byte CGIA_DL_MODE_HOLD_AND_MODIFY         = $0E
-const byte CGIA_DL_MODE_AFFINE_TRANSFORM        = $0F
+const byte DL_MODE_PALETTE_TEXT            = $08
+const byte DL_MODE_PALETTE_BITMAP          = $09
+const byte DL_MODE_ATTRIBUTE_TEXT          = $0A
+const byte DL_MODE_ATTRIBUTE_BITMAP        = $0B
+const byte DL_MODE_HOLD_AND_MODIFY         = $0E
+const byte DL_MODE_AFFINE_TRANSFORM        = $0F
 
-const byte CGIA_DL_MODE_BIT                     = %00001000
-const byte CGIA_DL_DOUBLE_WIDTH_BIT             = %00010000
-const byte CGIA_DL_MULTICOLOR_BIT               = %00100000
-const byte CGIA_DL_RESERVED_BIT                 = %01000000
-const byte CGIA_DL_DLI_BIT                      = %10000000
+const byte DL_MODE_BIT                     = %00001000
+const byte DL_DOUBLE_WIDTH_BIT             = %00010000
+const byte DL_MULTICOLOR_BIT               = %00100000
+const byte DL_RESERVED_BIT                 = %01000000
+const byte DL_DLI_BIT                      = %10000000
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Multicolor encoding
